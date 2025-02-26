@@ -8,6 +8,7 @@ from langchain.vectorstores.chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms import Ollama
 import re
+import time
 
 PROMPT_TEMPLATE = """
     You are a helpful assistant that answers questions based on the provided context from a PDF guide about the user office.
@@ -106,7 +107,6 @@ def query_rag(query_text: str):
     model = Ollama(model="deepseek-r1:14b")
 
     response_text = model.invoke(prompt)
-    # Remove thinking tags and their content
     response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
     sources = [doc.metadata.get("id", None) for doc, _score in results]
 
@@ -129,7 +129,11 @@ def main():
                 continue
             
             print("\nSearching and generating answer...")
+            start_time = time.time()
             query_rag(query)
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            print(f"\n########### Time taken to generate response: {elapsed_time:.2f} seconds ###########")
 
     except KeyboardInterrupt:
         print("\n\nExiting chatbot. Goodbye!")
