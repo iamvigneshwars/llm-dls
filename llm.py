@@ -2,7 +2,6 @@ import os
 import sys
 import argparse
 from typing import List, Dict, Any
-import PyPDF2
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS 
 from langchain_core.vectorstores import VectorStoreRetriever

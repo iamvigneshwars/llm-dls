@@ -104,7 +104,7 @@ def query_rag(query_text: str):
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=context_text, question=query_text)
 
-    model = Ollama(model="deepseek-r1:14b")
+    model = Ollama(model="llama3.1:70b")
 
     response_text = model.invoke(prompt)
     response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
