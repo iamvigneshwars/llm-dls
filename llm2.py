@@ -94,7 +94,7 @@ def init_rag_pipeline(
     
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={'device': 'cuda'},
+        model_kwargs={'device': 'cpu'},
         encode_kwargs={'normalize_embeddings': True, 'batch_size': 32}
     )
     
@@ -174,7 +174,7 @@ def init_rag_pipeline(
 def main():
     parser = argparse.ArgumentParser(description="Diamond RAG Chatbot")
     parser.add_argument("--pdf", required=True, help="Path to the PDF file")
-    parser.add_argument("--model", default="phi4:latest", help="Ollama model name (default: phi4:latest)")
+    parser.add_argument("--model", default="phi4:14b", help="Ollama model name (default: phi4:14b)")
     parser.add_argument("--chunk-size", type=int, default=3000, help="Text chunk size (default: 3000)")
     parser.add_argument("--chunk-overlap", type=int, default=600, help="Text chunk overlap (default: 600)")
     parser.add_argument("--retriever-k", type=int, default=8, help="Number of chunks to retrieve (default: 8)")
