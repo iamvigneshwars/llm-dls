@@ -1,0 +1,74 @@
+Bootstrap: docker
+From: nvidia/cuda:12.2.0-runtime-ubuntu22.04
+
+%post
+    # Update and install basic dependencies
+    apt-get update && apt-get install -y \
+        wget \
+        curl \
+        python3 \
+        python3-pip \
+        python3-venv \
+        git \
+        && rm -rf /var/lib/apt/lists/*
+    
+    # Install Ollama
+    curl -fsSL https://ollama.com/install.sh | sh
+    
+    # Create directory structure
+    mkdir -p /opt/ollama/models
+    mkdir -p /opt/app/data
+    
+    # Create and activate virtual environment
+    python3 -m venv /opt/venv
+    . /opt/venv/bin/activate
+    
+    # Install Python dependencies
+    pip install --upgrade pip
+    pip install -r /opt/app/requirements.txt
+    
+    # Create startup script
+    cat > /opt/app/start.sh << 'EOF'
+#!/bin/bash
+# Start Ollama server in background
+ollama serve > ollama.log 2>&1 & sleep 5
+
+# Wait for Ollama server to start
+sleep 5
+
+# Activate virtual environment and run Python script
+. /opt/venv/bin/activate
+cd /opt/app
+python3 llm2.py --pdf data/user.pdf
+EOF
+    
+    # Make the startup script executable
+    chmod +x /opt/app/start.sh
+
+%files
+    # Copy the Ollama model files
+    /dls/tmp/mrg27357/dev /opt/ollama/models
+    
+    # Copy the Python script and requirements
+    /dls/science/users/mrg27357/llm-dls/llm2.py /opt/app/
+    /dls/science/users/mrg27357/llm-dls/requirements.txt /opt/app/
+    
+    # Copy the PDF data file
+    /dls/science/users/mrg27357/llm-dls/data/user.pdf /opt/app/data/
+
+%environment
+    export PATH=/opt/venv/bin:$PATH
+    export PYTHONPATH=/opt/app:$PYTHONPATH
+    export OLLAMA_MODELS=/opt/ollama/models
+    export TMPDIR=/opt/tmp
+
+%runscript
+    exec /opt/app/start.sh
+
+%startscript
+    exec /opt/app/start.sh
+
+%labels
+    Author "Viki"
+    Description "Container for RAG model with Ollama"
+    Version "v0.0"
