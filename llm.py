@@ -57,14 +57,17 @@ def init_rag_pipeline(
     model_name: str, 
     chunk_size: int,
     chunk_overlap: int, 
-    retriever_k:int):
+    retriever_k:int,
+    debug: bool,
+):
 
-    print(f"Loading PDF from {pdf_path}...")
+    if debug:
+        print(f"Loading PDF from {pdf_path}...")
     start_time = time.time()
     documents = extract_text_and_links(pdf_path)
-    print(f"PDF loaded in {time.time() - start_time:.2f} seconds")
-    
-    print("Splitting text into chunks...")
+    if debug:
+        print(f"PDF loaded in {time.time() - start_time:.2f} seconds")
+        print("Splitting text into chunks...")
     start_time = time.time()
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -72,7 +75,8 @@ def init_rag_pipeline(
         separators=["\n\n", "\n", ".", " ", ""]
     )
     chunks = text_splitter.split_documents(documents)
-    print(f"Created {len(chunks)} chunks of text in {time.time() - start_time:.2f} seconds")
+    if debug:
+        print(f"Created {len(chunks)} chunks of text in {time.time() - start_time:.2f} seconds")
     
     enhanced_chunks = []
     for _, chunk in enumerate(chunks):
@@ -86,8 +90,8 @@ def init_rag_pipeline(
                 chunk.page_content = f"{chunk.page_content}\n\nRelated content: {related_content}"
         
         enhanced_chunks.append(chunk)
-    
-    print("Creating embeddings and vector store...")
+    if debug:
+        print("Creating embeddings and vector store...")
     start_time = time.time()
     
     num_workers = min(multiprocessing.cpu_count(), 6)
@@ -123,9 +127,9 @@ def init_rag_pipeline(
         }
     )
     
-    print(f"Vector store created in {time.time() - start_time:.2f} seconds")
-    
-    print(f"Initializing Ollama with model {model_name}...")
+    if debug:
+        print(f"Vector store created in {time.time() - start_time:.2f} seconds")
+        print(f"Initializing Ollama with model {model_name}...")
     llm = OllamaLLM(
         model=model_name,
         callbacks=[StreamingStdOutCallbackHandler()],
@@ -167,7 +171,8 @@ def init_rag_pipeline(
         chain_type_kwargs={"prompt": prompt}
     )
     
-    print("RAG pipeline initialized successfully!")
+    if debug:
+        print("RAG pipeline initialized successfully!")
     return qa_chain, retriever
 
 
@@ -178,8 +183,10 @@ def main():
     parser.add_argument("--chunk-size", type=int, default=3000, help="Text chunk size (default: 3000)")
     parser.add_argument("--chunk-overlap", type=int, default=600, help="Text chunk overlap (default: 600)")
     parser.add_argument("--retriever-k", type=int, default=8, help="Number of chunks to retrieve (default: 8)")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     
     args = parser.parse_args()
+    debug = args.debug
     
     if not os.path.exists(args.pdf):
         print(f"Error: PDF file not found at {args.pdf}")
@@ -190,7 +197,8 @@ def main():
         args.model,
         args.chunk_size,
         args.chunk_overlap,
-        args.retriever_k
+        args.retriever_k,
+        args.debug
     )
     
     print("\n" + "="*50)
@@ -215,7 +223,8 @@ def main():
             retrieval_start = time.time()
             retriever.invoke(query)
             retrieval_time = time.time() - retrieval_start
-            print(f"\nRetrieval time: {retrieval_time:.2f} seconds")
+            if debug:
+                print(f"\nRetrieval time: {retrieval_time:.2f} seconds")
             
             print("\nResponse: ")
             inference_start = time.time()
@@ -226,18 +235,19 @@ def main():
             
             overhead = total_time - retrieval_time - inference_time
             
-            print(f"\nTiming Summary:")
-            print(f"  - Total time: {total_time:.2f} seconds")
-            print(f"  - Retrieval time: {retrieval_time:.2f} seconds")
-            print(f"  - LLM inference time: {inference_time:.2f} seconds")
-            print(f"  - Overhead: {overhead:.2f} seconds")
+            if debug:
+                print(f"\nTiming Summary:")
+                print(f"  - Total time: {total_time:.2f} seconds")
+                print(f"  - Retrieval time: {retrieval_time:.2f} seconds")
+                print(f"  - LLM inference time: {inference_time:.2f} seconds")
+                print(f"  - Overhead: {overhead:.2f} seconds")
             
-            print("\nSOURCE DOCUMENTS:")
-            for i, doc in enumerate(result.get("source_documents", []), 1):
-                page_info = f" (Page {doc.metadata.get('page', 'unknown')})" if doc.metadata.get('page') else ""
-                print(f"{i}. Document excerpt{page_info}:")
-                print(f"   {doc.page_content[:150]}..." if len(doc.page_content) > 150 else f"   {doc.page_content}")
-                print()
+                print("\nSOURCE DOCUMENTS:")
+                for i, doc in enumerate(result.get("source_documents", []), 1):
+                    page_info = f" (Page {doc.metadata.get('page', 'unknown')})" if doc.metadata.get('page') else ""
+                    print(f"{i}. Document excerpt{page_info}:")
+                    print(f"   {doc.page_content[:150]}..." if len(doc.page_content) > 150 else f"   {doc.page_content}")
+                    print()
             
     except KeyboardInterrupt:
         print("\n\nExiting chatbot. Goodbye!")

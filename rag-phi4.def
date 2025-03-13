@@ -39,7 +39,7 @@ sleep 5
 # Activate virtual environment and run Python script
 . /opt/venv/bin/activate
 cd /opt/app
-python3 llm2.py --pdf data/user.pdf
+python3 llm.py --pdf data/user.pdf
 EOF
     
     # Make the startup script executable
@@ -50,7 +50,7 @@ EOF
     /dls/tmp/mrg27357/dev /opt/ollama/models
     
     # Copy the Python script and requirements
-    /dls/science/users/mrg27357/llm-dls/llm2.py /opt/app/
+    /dls/science/users/mrg27357/llm-dls/llm.py /opt/app/
     /dls/science/users/mrg27357/llm-dls/requirements.txt /opt/app/
     
     # Copy the PDF data file
