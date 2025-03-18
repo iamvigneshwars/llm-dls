@@ -97,7 +97,7 @@ def init_rag_pipeline(
     
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={'device': 'cpu'},
+        model_kwargs={'device': 'cuda'},
         encode_kwargs={'normalize_embeddings': True, 'batch_size': 32}
     )
     
@@ -177,6 +177,14 @@ def create_app(qa_chain):
     """Create and configure the Flask application."""
     app = Flask(__name__)
     
+    @app.route('/status', methods=['GET'])
+    def status():
+        """Handle GET requests to /status endpoint."""
+        return jsonify({
+            "status": "online",
+            "api_version": "1.0"
+        })
+    
     @app.route('/ask', methods=['POST'])
     def ask():
         """Handle POST requests to /ask endpoint."""
@@ -185,7 +193,6 @@ def create_app(qa_chain):
             return jsonify({"error": "Missing 'question' in request body"}), 400
         
         question = data['question']
-        debug = data.get('debug', False)
         
         try:
             start_time = time.time()
@@ -193,20 +200,15 @@ def create_app(qa_chain):
             total_time = time.time() - start_time
             
             answer = result["result"]
-            response = {"answer": answer}
-            
-            if debug:
-                sources = []
-                for doc in result.get("source_documents", []):
-                    page = doc.metadata.get('page', 'unknown')
-                    excerpt = doc.page_content[:150] + "..." if len(doc.page_content) > 150 else doc.page_content
-                    sources.append({"page": page, "excerpt": excerpt})
-                response["sources"] = sources
-                response["total_time"] = total_time
+            response = {"answer": answer, "processing_time": f"{total_time:.2f}"}
             
             return jsonify(response)
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+
+    @app.route('/health', methods=['GET'])
+    def health():
+        return jsonify({"status": "Online"}), 200
     
     return app
 
