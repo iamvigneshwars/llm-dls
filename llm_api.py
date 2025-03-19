@@ -173,7 +173,7 @@ def init_rag_pipeline(
         print("RAG pipeline initialized successfully!")
     return qa_chain, retriever
 
-def create_app(qa_chain):
+def create_app(qa_chain, model_name):
     """Create and configure the Flask application."""
     app = Flask(__name__)
     
@@ -182,7 +182,8 @@ def create_app(qa_chain):
         """Handle GET requests to /status endpoint."""
         return jsonify({
             "status": "online",
-            "api_version": "1.0"
+            "api_version": "1.0",
+            "model": model_name
         })
     
     @app.route('/ask', methods=['POST'])
@@ -200,7 +201,13 @@ def create_app(qa_chain):
             total_time = time.time() - start_time
             
             answer = result["result"]
-            response = {"answer": answer, "processing_time": f"{total_time:.2f}"}
+            response = {
+                "answer": answer, 
+                "metadata": {
+                    "model": model_name,
+                    "processing_time": f"{total_time:.2f}",
+                }
+            }
             
             return jsonify(response)
         except Exception as e:
@@ -208,7 +215,7 @@ def create_app(qa_chain):
 
     @app.route('/health', methods=['GET'])
     def health():
-        return jsonify({"status": "Online"}), 200
+        return jsonify({"status": "Online", "model": model_name}), 200
     
     return app
 
@@ -237,7 +244,7 @@ def main():
         args.debug
     )
     
-    app = create_app(qa_chain)
+    app = create_app(qa_chain, args.model)
     
     if debug:
         print(f"Starting Diamond RAG API on http://0.0.0.0:{args.port}")
