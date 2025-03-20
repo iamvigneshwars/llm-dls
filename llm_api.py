@@ -3,6 +3,7 @@ import sys
 import argparse
 import time
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from langchain_community.vectorstores import FAISS 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -133,7 +134,8 @@ def init_rag_pipeline(
         model=model_name,
         temperature=0.6, 
         num_ctx=8192,
-        repeat_penalty=1.2
+        repeat_penalty=1.2,
+        keep_alive=-1
     )
     
     template = """
@@ -176,6 +178,7 @@ def init_rag_pipeline(
 def create_app(qa_chain, model_name):
     """Create and configure the Flask application."""
     app = Flask(__name__)
+    CORS(app)
     
     @app.route('/status', methods=['GET'])
     def status():
