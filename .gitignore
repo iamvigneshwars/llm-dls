@@ -1,4 +1,5 @@
 .venv
 llm-dls
 *.sif
-ollama.log
+*.log
+*.err
