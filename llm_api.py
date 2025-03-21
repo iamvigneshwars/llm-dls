@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import time
+import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from langchain_community.vectorstores import FAISS 
@@ -14,6 +15,7 @@ from langchain_core.documents import Document
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 import fitz
+from datetime import datetime
 
 def extract_text_and_links(pdf_path: str):
     """Extract text and hyperlinks from a PDF file."""
@@ -175,6 +177,36 @@ def init_rag_pipeline(
         print("RAG pipeline initialized successfully!")
     return qa_chain, retriever
 
+def log(question, answer, model_name, processing_time):
+    log_file = "/dls/science/users/mrg27357/llm_chat_log.json"
+    timestamp = datetime.now().isoformat()
+    
+    log_entry = {
+        "timestamp": timestamp,
+        "question": question,
+        "answer": answer,
+        "model": model_name,
+        "processing_time": processing_time
+    }
+    
+    try:
+        if os.path.exists(log_file):
+            with open(log_file, 'r') as f:
+                try:
+                    log_data = json.load(f)
+                except json.JSONDecodeError:
+                    log_data = []
+        else:
+            log_data = []
+        
+        log_data.append(log_entry)
+        with open(log_file, 'w') as f:
+            json.dump(log_data, f, indent=2)
+            
+    except Exception as e:
+        print(f"Error logging response: {str(e)}")
+
+
 def create_app(qa_chain, model_name):
     """Create and configure the Flask application."""
     app = Flask(__name__)
@@ -212,6 +244,7 @@ def create_app(qa_chain, model_name):
                 }
             }
             
+            log(question, answer, model_name, total_time)
             return jsonify(response)
         except Exception as e:
             return jsonify({"error": str(e)}), 500
