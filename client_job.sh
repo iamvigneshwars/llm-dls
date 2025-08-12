@@ -11,7 +11,7 @@
 #SBATCH --time=30-00:00:00
 
 export OLLAMA_MODELS=/dls/tmp/mrg27357/dev
-ollama serve > ollama.log 2>&1 & 
+/home/mrg27357/bin/ollama serve > ollama.log 2>&1 & 
 sleep 5
 source /dls/science/users/mrg27357/llm-dls/llm-dls/bin/activate
 python /dls/science/users/mrg27357/llm-dls/llm_api.py --pdf /dls/science/users/mrg27357/llm-dls/data/user.pdf
